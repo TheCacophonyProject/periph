@@ -259,12 +259,37 @@ func (d *Dev) GetSerial() (uint64, error) {
 	return d.serial, nil
 }
 
+func swizzleBytes(buffer []byte) {
+	i := 0
+	for i < binary.Size(buffer)/2 {
+		tmp := buffer[i]
+		buffer[i] = buffer[i+1]
+		buffer[i+1] = tmp
+		i += 2
+	}
+}
 // Get the OEM part number
 func (d *Dev) GetPartNum() ([32]byte, error) {
 	var buffer [32]byte
 	if err := d.c.get(oemPartNumber, &buffer); err != nil {
 		return buffer, err
 	}
+
+
+	// NOTE: These bytes need to be swizzled due to endianess issues.
+	swizzleBytes(buffer[:])
+	return buffer, nil
+}
+
+// Get the OEM customer part number
+func (d *Dev) GetCustomerPartNum() ([32]byte, error) {
+	var buffer [32]byte
+	if err := d.c.get(oemCustomerPartNumber, &buffer); err != nil {
+		return buffer, err
+	}
+
+	// NOTE: These bytes need to be swizzled due to endianess issues.
+	swizzleBytes(buffer[:])
 	return buffer, nil
 }
 
@@ -274,6 +299,9 @@ func (d *Dev) GetSoftwareVersion() ([8]byte, error) {
 	if err := d.c.get(oemSoftwareRevision, &buffer); err != nil {
 		return buffer, err
 	}
+
+	// NOTE: These bytes need to be swizzled due to endianess issues.
+	swizzleBytes(buffer[:])
 	return buffer, nil
 }
 
@@ -639,7 +667,7 @@ const (
 	vidFocusMetricGet         command = 0x0318 // 2   GET
 	vidVideoFreezeEnable      command = 0x0324 // 2   GET/SET
 
-	radTLinearEnableState command = 0x4EC0 // 2   GET
+	radTLinearEnableState     command = 0x4EC0 // 2   GET
 )
 
 // TODO(maruel): Enable RadXXX commands.
